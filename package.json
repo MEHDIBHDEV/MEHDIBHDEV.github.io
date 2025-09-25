@@ -1,12 +1,15 @@
 {
   "name": "mehdi-boucherrouur-portfolio",
+  "homepage": "https://mehdibhdev.github.io/",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "framer-motion": "^10.18.0",
@@ -17,9 +20,9 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.13",
     "vite": "^5.4.8"
   }
 }
-
