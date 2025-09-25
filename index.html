@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mehdi BOUCHERROUR — Développeur Web</title>
+    <meta name="description" content="Portfolio de Mehdi BOUCHERROUR — Développeur Web (Alternance). Projets, compétences, et contact." />
+    <script>
+      (function() {
+        try {
+          const ls = localStorage.getItem('theme');
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (ls === 'dark' || (!ls && systemDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="text-zinc-800 dark:text-zinc-100 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-black">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+  
+</html>

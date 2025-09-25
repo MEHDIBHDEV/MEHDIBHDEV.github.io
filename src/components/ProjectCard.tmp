@@ -1,0 +1,137 @@
+﻿import React, { useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ExternalLink, Github, Link as LinkIcon, Edit } from 'lucide-react'
+
+function isValidExternal(url) {
+  if (!url || typeof url !== 'string') return false
+  return /^https?:\/\//i.test(url)
+}
+
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return null
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  // Skip obvious placeholders
+  if (/^(DEMO_|REPO_|LIEN_|#)$/i.test(trimmed)) return null
+  // Already valid http/https
+  if (isValidExternal(trimmed)) return trimmed
+  // Accept bare domains or www.* and prefix https
+  if (/^(www\.)?[a-z0-9.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) {
+    return `https://${trimmed.replace(/^\/+/, '')}`
+  }
+  return null
+}
+
+function slugify(text) {
+  return (text || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+export default function ProjectCard({ title, description, tech = [], repo, demo, image, anchorId }) {
+  const [customLink, setCustomLink] = useState(null)
+  const slug = useMemo(() => slugify(title), [title])
+  const storageKey = `projectLink:${slug}`
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      const valid = sanitizeUrl(saved)
+      if (valid) setCustomLink(valid)
+    } catch {}
+  }, [storageKey])
+
+  const demoUrl = sanitizeUrl(demo) || customLink
+  const repoUrl = sanitizeUrl(repo)
+  const primaryUrl = demoUrl || repoUrl
+
+  const addOrEditLink = () => {
+    const current = demoUrl || ''
+    const input = window.prompt('Collez l\'URL de la dÃ©mo pour ce projet:', current)
+    if (input == null) return
+    const cleaned = sanitizeUrl(input)
+    if (!cleaned) {
+      window.alert('URL invalide. Utilisez un lien comme https://exemple.com')
+      return
+    }
+    try {
+      localStorage.setItem(storageKey, cleaned)
+      setCustomLink(cleaned)
+    } catch {}
+  }
+  return (
+    <motion.article
+      id={anchorId}
+      className="card overflow-hidden hover:border-violet-500/40"
+      whileHover={{ y: -2, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      {primaryUrl ? (
+        <a href={primaryUrl} target="_blank" rel="noopener" aria-label={`Ouvrir ${title}`} className="block">
+          <div className="aspect-video relative overflow-hidden">
+            <img src={image} alt={`AperÃ§u du projet ${title}`} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-violet-600/25 to-transparent" aria-hidden="true"></div>
+          </div>
+        </a>
+      ) : (
+        <div className="aspect-video relative overflow-hidden cursor-not-allowed" title="Ajoutez l'URL de dÃ©mo via le bouton ci-dessous">
+          <img src={image} alt={`AperÃ§u du projet ${title}`} className="w-full h-full object-cover opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-t from-violet-600/25 to-transparent" aria-hidden="true"></div>
+        </div>
+      )}
+      <div className="p-4">
+        <h3 className="font-semibold text-lg">
+          {primaryUrl ? (
+            <a href={primaryUrl} target="_blank" rel="noopener" className="hover:underline decoration-violet-500/70">{title}</a>
+          ) : (
+            <span className="opacity-90" title="Lien Ã  complÃ©ter dans src/data/site.js">{title}</span>
+          )}
+        </h3>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">{description}</p>
+        {tech?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {tech.map((t) => (
+              <span key={t} className="text-xs px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/40 dark:border-zinc-700">{t}</span>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2 mt-4 items-center">
+          {demo && (
+            demoUrl ? (
+              <>
+                <a href={demoUrl} target="_blank" rel="noopener" className="btn-primary">
+                  <ExternalLink size={16} /> DÃ©mo
+                </a>
+                <button type="button" onClick={addOrEditLink} className="btn-secondary px-3" title="Modifier l'URL de la dÃ©mo">
+                  <Edit size={16} />
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={addOrEditLink} className="btn-primary" title="Ajouter l'URL de la dÃ©mo">
+                <LinkIcon size={16} /> Ajouter lien
+              </button>
+            )
+          )}
+          {repo && (
+            repoUrl ? (
+              <a href={repoUrl} target="_blank" rel="noopener" className="btn-secondary">
+                <Github size={16} /> Code
+              </a>
+            ) : (
+              <span className="btn-secondary opacity-50 pointer-events-none" title="Remplacer REPO_* dans src/data/site.js">
+                <Github size={16} /> Code
+              </span>
+            )
+          )}
+          {!demo && !primaryUrl && (
+            <button type="button" onClick={addOrEditLink} className="btn-secondary" title="Ajouter l'URL de la dÃ©mo">
+              <Edit size={16} /> Ajouter lien
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.article>
+  )
+}
