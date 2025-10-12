@@ -1,138 +1,101 @@
-﻿import React, { useEffect, useMemo, useState } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
-import { ExternalLink, Github, Link as LinkIcon, Edit, Info } from 'lucide-react'
-import ProjectModal from './ProjectModal.jsx'
+import { ExternalLink, Github } from 'lucide-react'
 
-function isValidExternal(url) {
-  if (!url || typeof url !== 'string') return false
-  return /^https?:\/\//i.test(url)
-}
-
-function sanitizeUrl(url) {
+function normalizeUrl(url) {
   if (!url || typeof url !== 'string') return null
   const trimmed = url.trim()
   if (!trimmed) return null
-  // Skip obvious placeholders
-  if (/^(DEMO_|REPO_|LIEN_|#)$/i.test(trimmed)) return null
-  // Already valid http/https
-  if (isValidExternal(trimmed)) return trimmed
-  // Accept bare domains or www.* and prefix https
+  if (/^(https?:)?\/\//i.test(trimmed)) {
+    return trimmed.startsWith('http') ? trimmed : `https:${trimmed}`
+  }
   if (/^(www\.)?[a-z0-9.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) {
     return `https://${trimmed.replace(/^\/+/, '')}`
   }
   return null
 }
 
-function slugify(text) {
-  return (text || '')
-    .toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
+export default function ProjectCard({
+  anchorId,
+  title,
+  description,
+  tech = [],
+  site,
+  demo,
+  code,
+  repo,
+  image,
+  imageAlt,
+}) {
+  const siteUrl = normalizeUrl(site) || normalizeUrl(demo)
+  const codeUrl = normalizeUrl(code) || normalizeUrl(repo)
+  const fallbackAlt = `Aperçu du projet ${title}`
 
-export default function ProjectCard({ title, description, tech = [], repo, demo, image, anchorId }) {
-  const [customLink, setCustomLink] = useState(null)
-  const [open, setOpen] = useState(false)
-  const slug = useMemo(() => slugify(title), [title])
-  const storageKey = `projectLink:${slug}`
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey)
-      const valid = sanitizeUrl(saved)
-      if (valid) setCustomLink(valid)
-    } catch {}
-  }, [storageKey])
-
-  const demoUrl = sanitizeUrl(demo) || customLink
-  const repoUrl = sanitizeUrl(repo)
-  const primaryUrl = demoUrl || repoUrl
-
-  const addOrEditLink = () => {
-    const current = demoUrl || ''
-    const input = window.prompt('Collez l\'URL de la démo pour ce projet :', current)
-    if (input == null) return
-    const cleaned = sanitizeUrl(input)
-    if (!cleaned) {
-      window.alert('URL invalide. Utilisez un lien comme https://exemple.com')
-      return
-    }
-    try {
-      localStorage.setItem(storageKey, cleaned)
-      setCustomLink(cleaned)
-    } catch {}
-  }
   return (
     <motion.article
       id={anchorId}
-      className="card overflow-hidden hover:border-violet-500/40"
+      className="card overflow-hidden hover:border-violet-500/40 focus-within:border-violet-500/60 transition-colors"
       whileHover={{ y: -2, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
-      {primaryUrl ? (
-        <a href={primaryUrl} target="_blank" rel="noopener" aria-label={`Ouvrir ${title}`} className="block">
-          <div className="aspect-video relative overflow-hidden">
-            <img src={image} alt={`Aperçu du projet ${title}`} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-violet-600/25 to-transparent" aria-hidden="true"></div>
-          </div>
-        </a>
-      ) : (
-        <div className="aspect-video relative overflow-hidden cursor-not-allowed" title="Ajoutez l'URL de démo via le bouton ci-dessous">
-          <img src={image} alt={`Aperçu du projet ${title}`} className="w-full h-full object-cover opacity-90" />
-          <div className="absolute inset-0 bg-gradient-to-t from-violet-600/25 to-transparent" aria-hidden="true"></div>
-        </div>
-      )}
-      <div className="p-4">
-        <h3 className="font-semibold text-lg">
-          {primaryUrl ? (
-            <a href={primaryUrl} target="_blank" rel="noopener" className="hover:underline decoration-violet-500/70">{title}</a>
-          ) : (
-            <span className="opacity-90" title="Lien à compléter dans src/data/site.js">{title}</span>
-          )}
-        </h3>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">{description}</p>
-        {tech?.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {tech.map((t) => (
-              <span key={t} className="text-xs px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/40 dark:border-zinc-700">{t}</span>
-            ))}
+      <div className="aspect-video relative overflow-hidden">
+        {image ? (
+          <img
+            src={image}
+            alt={imageAlt || fallbackAlt}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            Image en cours d'ajout
           </div>
         )}
-        <div className="flex flex-wrap gap-2 mt-4 items-center">
-          {demo && (
-            demoUrl ? (
-              <>
-                <a href={demoUrl} target="_blank" rel="noopener" className="btn-primary">
-                  <ExternalLink size={16} /> Démo
-                </a>
-                <button type="button" onClick={addOrEditLink} className="btn-secondary px-3" title="Modifier l'URL de la démo">
-                  <Edit size={16} />
-                </button>
-              </>
-            ) : (
-              <button type="button" onClick={addOrEditLink} className="btn-primary" title="Ajouter l'URL de la démo">
-                <LinkIcon size={16} /> Ajouter lien
-              </button>
-            )
-          )}
-          {repo && (
-            repoUrl ? (
-              <a href={repoUrl} target="_blank" rel="noopener" className="btn-secondary">
-                <Github size={16} /> Code
-              </a>
-            ) : (
-              <span className="btn-secondary opacity-50 pointer-events-none" title="Remplacer REPO_* dans src/data/site.js">
-                <Github size={16} /> Code
-              </span>
-            )
-          )}
-          {!demo && !primaryUrl && (
-            <button type="button" onClick={addOrEditLink} className="btn-secondary" title="Ajouter l'URL de la démo">
-              <Edit size={16} /> Ajouter lien
-            </button>
-          )}
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/15 to-transparent pointer-events-none" aria-hidden="true" />
+      </div>
+      <div className="flex flex-col gap-4 p-4">
+        <header>
+          <h3 className="font-semibold text-lg text-zinc-900 dark:text-white">{title}</h3>
+          {description ? (
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{description}</p>
+          ) : null}
+        </header>
+        {tech?.length ? (
+          <ul className="flex flex-wrap gap-2" aria-label="Technologies du projet">
+            {tech.map((t) => (
+              <li
+                key={t}
+                className="text-xs px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/40 dark:border-zinc-700"
+              >
+                {t}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <footer className="mt-auto flex flex-wrap gap-2">
+          {siteUrl ? (
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Ouvrir le site du projet ${title}`}
+              className="btn-primary inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
+            >
+              <ExternalLink size={16} aria-hidden="true" /> Voir le site
+            </a>
+          ) : null}
+          {codeUrl ? (
+            <a
+              href={codeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Consulter le code du projet ${title}`}
+              className="btn-secondary inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
+            >
+              <Github size={16} aria-hidden="true" /> Code
+            </a>
+          ) : null}
+        </footer>
       </div>
     </motion.article>
   )

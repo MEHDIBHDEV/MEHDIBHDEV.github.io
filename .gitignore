@@ -1,11 +1,12 @@
-# dépendances
-node_modules
-*.log
+# deps
+node_modules/
 
-# build
-dist
-.DS_Store
+# caches / builds
+node_modules/.vite/
+.vite/
+dist/
 
-# env
+# env (ne jamais pousser tes clés)
 .env
-.env.local
+.env.*
+
